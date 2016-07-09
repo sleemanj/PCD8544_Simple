@@ -35,32 +35,75 @@ void PCD8544_Simple::begin(bool invert, uint8_t vop, uint8_t tempCoef, uint8_t b
 }
 
 size_t PCD8544_Simple::write(uint8_t data)
-{
-  // Non-ASCII characters are not supported.
-  if (data < 0x20 || data > 0x7F) return 0;
+{  
+  if(data == '\n')  // Newline means go to the next line
+  {        
+    this->m_Position = ((this->m_Position / PCD8544_X_PIXELS) + 1) * PCD8544_X_PIXELS;
+  }
   
-  if (this->m_Position + 5 >= BUF_LEN) this->m_Position -= (BUF_LEN - 6);
-  memcpy_P(this->m_Buffer + this->m_Position, ASCII[data - 0x20], 5);
-  this->m_Buffer[this->m_Position+5] = 0x00;
-  this->m_Position += 6;
-  if (this->m_Position >= BUF_LEN) this->m_Position -= BUF_LEN;
-  //this->m_Position %= BUF_LEN;
+  // If we are out of room in the buffer for the entire character
+  // (including if we have just walked across the buffer end due to the 
+  // newline on the last line)
+  if(this->m_Position + 5 >= BUF_LEN)
+  {
+    // shift Rows:1..n up to 0..n-1 
+    for(uint8_t y = 1; y < PCD8544_ROWS; y++)
+    {
+      memcpy(this->m_Buffer+((y-1)*PCD8544_X_PIXELS), this->m_Buffer+(y * PCD8544_X_PIXELS ), PCD8544_X_PIXELS);             
+    }       
+    
+    // Clear and seek to th last line.
+    memset(this->m_Buffer+((PCD8544_ROWS-1)*PCD8544_X_PIXELS), 0, PCD8544_X_PIXELS);
+    this->gotoXY(0,PCD8544_ROWS-1);
+  }
+  
+  // Non-ASCII characters are not supported.
+  // We pretend they are though otherwise all the rest of the 
+  // string is dropped (by Print::write(const uint8_t *buffer, size_t size))
+  if (data < 0x20 || data > 0x7F) return 1;
+  
+  if(this->textInversion)
+  {
+    for(uint8_t x = 0; x < 5; x++)
+    {
+      this->m_Buffer[this->m_Position + x] = ~pgm_read_byte(ASCII[data - 0x20]+x);      
+    }
+  }
+  else
+  {
+    memcpy_P(this->m_Buffer + this->m_Position, ASCII[data - 0x20], 5);
+  }
+  
+  this->m_Position += 5;
+  
+  if(this->m_Position < BUF_LEN-1)
+  {
+    // Set the next pixel row to blank for spaces between characters
+    this->m_Buffer[this->m_Position] = this->textInversion ? 0xFF : 0x00;
+    this->m_Position++;
+  }
+  
   return 1;
+}
+
+void PCD8544_Simple::invertText(uint8_t inversionStatus)
+{
+  textInversion = inversionStatus;
 }
 
 void PCD8544_Simple::clear(bool render)
 {
   memset(this->m_Buffer, 0x00, sizeof(this->m_Buffer));
   if (render)
-    this->renderAll();
+    this->update();
   this->gotoXY(0, 0);
 }
 
 uint8_t PCD8544_Simple::gotoXY(uint8_t x, uint8_t y) 
 { 
   if (x >= PCD8544_X_PIXELS || y >= PCD8544_ROWS) return PCD8544_ERROR;
-  this->writeLcd(PCD8544_COMMAND, 0x80 | x);  // Column.
-  this->writeLcd(PCD8544_COMMAND, 0x40 | y);  // Row.
+ // this->writeLcd(PCD8544_COMMAND, 0x80 | x);  // Column (Pixel).
+ // this->writeLcd(PCD8544_COMMAND, 0x40 | y);  // Bank (Rows).
   this->m_Position = (PCD8544_X_PIXELS * y) + x;
   return PCD8544_SUCCESS;
 }
@@ -89,24 +132,9 @@ uint8_t PCD8544_Simple::writeBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y,
   return PCD8544_SUCCESS;
 }
 
-//void PCD8544_Simple::init(void) 
-//{
-//  // Must reset LCD first!
-//  PCD8544_PORT &= ~PIN_RESET;
-//  PCD8544_PORT |= PIN_RESET;
-//
-//  this->writeLcd(PCD8544_COMMAND, 0x21); //Tell LCD that extended commands follow
-//  this->writeLcd(PCD8544_COMMAND, 0xB0); //Set LCD Vop (Contrast): Try 0xB1(good @ 3.3V) or 0xBF if your display is too dark
-//  this->writeLcd(PCD8544_COMMAND, 0x04); //Set Temp coefficent
-//  this->writeLcd(PCD8544_COMMAND, 0x12); //LCD bias mode 1:48: Try 0x13 or 0x14. Mine works best with 1:65/1:65
-//
-//  this->writeLcd(PCD8544_COMMAND, 0x20); //We must send 0x20 before modifying the display control mode
-//  this->writeLcd(PCD8544_COMMAND, 0x0C); //Set display control, normal mode. 0x0D for inverse
-//}
-
-void PCD8544_Simple::renderAll()
+void PCD8544_Simple::update()
 { 
-  this->gotoXY(0, 0);
+ // this->gotoXY(0, 0);
   this->writeLcd(PCD8544_DATA, this->m_Buffer, BUF_LEN);
 }
 
@@ -131,29 +159,49 @@ void PCD8544_Simple::setPixel(uint8_t x, uint8_t y, uint8_t value)
     byte &= ~bitMask;
 }
 
-uint8_t PCD8544_Simple::writeLine(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
-{
-  if (x1 == x2 || y1 == y2)
-  {
-    if (y1 > y2)
-      swap(y1, y2);
-    if (x1 > x2)
-      swap(x1, x2);
-    return this->writeRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+// Bresenham's Line Algorithm
+// https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C
+void PCD8544_Simple::drawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) 
+{ 
+  int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+  int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  int err = (dx>dy ? dx : -dy)/2, e2;
+ 
+  for(;;){
+    setPixel(x0,y0,1);
+    if (x0==x1 && y0==y1) break;
+    e2 = err;
+    if (e2 >-dx) { err -= dy; x0 += sx; }
+    if (e2 < dy) { err += dx; y0 += sy; }
   }
-  else
-    return PCD8544_ERROR;
 }
 
-void PCD8544_Simple::swap(uint8_t &a, uint8_t &b)
+// Rectangles using Bresenham
+// x & y are top left corner
+void PCD8544_Simple::drawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height)
 {
-  uint8_t temp = a;
-  a = b;
-  b = temp;
+  drawLine(x, y, x + width, y);                       // Top Line
+  drawLine(x, y, x , y + height);                     // Left Line
+  drawLine(x+width, y, x+width , y + height);         // Right Line
+  drawLine(x, y+height, x + width , y + height);      // Bottom Line    
 }
 
-uint8_t PCD8544_Simple::writeRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool fill)
+// A filled rectangle is a series of lines
+// again x & y are top left corner
+void PCD8544_Simple::drawFilledRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height)
 {
+  while(width)
+  {
+    drawLine(x+width,y,x+width,y+height);
+    width--;
+  }
+}
+
+/*
+uint8_t PCD8544_Simple::drawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool fill)
+{
+  
+  
   if (x >= PCD8544_X_PIXELS || y >= PCD8544_Y_PIXELS || width == 0 || height == 0) return PCD8544_ERROR;
 
   // Calculate the bitmasks for the pixels.
@@ -223,6 +271,62 @@ uint8_t PCD8544_Simple::writeRect(uint8_t x, uint8_t y, uint8_t width, uint8_t h
   }
   return PCD8544_SUCCESS;
 }
+*/
+
+
+// https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm#C
+// This seems to be the same algo that Adafruit uses in their GFX library
+// it produces a better result than the (Bresenham?) algorithm presented 
+// on https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
+
+void PCD8544_Simple::drawCircle(uint8_t x0, uint8_t y0, uint8_t radius)
+{  
+    int f = 1 - radius;
+    int ddF_x = 0;
+    int ddF_y = -2 * radius;
+    int x = 0;
+    int y = radius;
+ 
+    setPixel(x0, y0 + radius, 1);
+    setPixel(x0, y0 - radius, 1);
+    setPixel(x0 + radius, y0, 1);
+    setPixel(x0 - radius, y0, 1);
+ 
+    while(x < y) 
+    {
+        if(f >= 0) 
+        {
+            y--;
+            ddF_y += 2;
+            f += ddF_y;
+        }
+        x++;
+        ddF_x += 2;
+        f += ddF_x + 1;    
+        setPixel(x0 + x, y0 + y, 1);
+        setPixel(x0 - x, y0 + y, 1);
+        setPixel(x0 + x, y0 - y, 1);
+        setPixel(x0 - x, y0 - y, 1);
+        setPixel(x0 + y, y0 + x, 1);
+        setPixel(x0 - y, y0 + x, 1);
+        setPixel(x0 + y, y0 - x, 1);
+        setPixel(x0 - y, y0 - x, 1);
+    }
+}
+
+
+// This needs work, due the aliasing it doesn't result in a completely
+// filled circle, although the result I quite like....
+void PCD8544_Simple::drawFilledCircle(uint8_t x0, uint8_t y0, uint8_t radius)
+{
+  while(radius > 0)
+  {
+    drawCircle(x0, y0, radius--);
+  }
+  setPixel(x0, y0, 1);
+}
+
+
 
 void PCD8544_Simple::writeLcd(uint8_t dataOrCommand, const uint8_t *data, uint16_t count)
 {
@@ -240,3 +344,4 @@ void PCD8544_Simple::writeLcd(uint8_t dataOrCommand, uint8_t data)
   SPI.transfer(data);
   PCD8544_PORT |= PIN_CE;
 }
+

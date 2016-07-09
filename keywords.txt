@@ -17,11 +17,11 @@ begin	KEYWORD2
 clear	KEYWORD2
 gotoXY	KEYWORD2
 writeBitmap	KEYWORD2
-renderAll	KEYWORD2
+update	KEYWORD2
 renderString	KEYWORD2
 setPixel	KEYWORD2
-writeLine	KEYWORD2
-writeRect	KEYWORD2
+drawLine	KEYWORD2
+drawRectangle	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

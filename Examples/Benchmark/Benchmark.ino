@@ -8,7 +8,7 @@ void setup(void)
 	Serial.begin(9600);
 	lcd.begin();
 	lcd.print(F("Preparing benchmark"));
-	lcd.renderAll();
+	lcd.update();
 	delay(1000);
 }
 
@@ -20,54 +20,84 @@ uint8_t bmp[] = {
 
 void loop(void) 
 {
+  
+  
+  while(1)
+  {
+    for(uint8_t x = 1; x < 50; x++)
+  {
+    lcd.clear();
+    lcd.drawFilledCircle(PCD8544_X_PIXELS/2,PCD8544_Y_PIXELS/2, x);
+    lcd.update();
+    delay(100);
+  }
+  for(uint8_t x = 50; x > 0; x--)
+  {
+    lcd.clear();
+    lcd.drawFilledCircle(PCD8544_X_PIXELS/2,PCD8544_Y_PIXELS/2, x);
+    lcd.update();
+    delay(100);
+  }
+  
+  lcd.clear();
+  lcd.drawCircle(PCD8544_X_PIXELS/2,PCD8544_Y_PIXELS/2, 20);
+  lcd.update();
+  delay(1000);
+
+  lcd.clear();
+  lcd.drawFilledCircle(PCD8544_X_PIXELS/2,PCD8544_Y_PIXELS/2, 20);
+  lcd.update();
+  delay(1000);
+  }
+  
 	size_t len;
 
 	lcd.clear();
 	unsigned long time = micros();
 	len = lcd.print(F("012345678901234567890123456789012345678901234567890123456789012345678901234567890123"));
-	lcd.renderString(0, 0, len);
+	lcd.update();
 	time = micros() - time;
 	delay(3000);
 
 	lcd.clear();
 	lcd.print(F("The time it took to print 84 chars is:    "));
 	lcd.print(time);
-	lcd.renderAll();
+	lcd.update();
 	delay(3000);
 
 	lcd.clear();
 	lcd.gotoXY(5,3);
 	lcd.print(F("Test gotoXY"));
-	lcd.renderAll();
+	lcd.update();
 	delay(3000);
 
 	lcd.clear();
 	time = micros();
 	lcd.writeBitmap(bmp, 10, 2, 25, 3);
-	lcd.renderAll();
+	lcd.update();
 	time = micros() - time;
 	delay(3000);
 
 	lcd.clear();
 	lcd.print(F("The time it took to draw a 25x3 (25x18) bitmap is: "));
 	lcd.print(time);
-	lcd.renderAll();
+	lcd.update();
 	delay(3000);
 	
 	lcd.clear();
 	time = micros();
-	lcd.writeRect(5, 5, 50, 40);
-	lcd.writeLine(75, 3, 75, 35);
-	lcd.writeLine(60, 10, 60, 40);
-	lcd.writeLine(10, 47, 60, 47);
-	lcd.renderAll();
+	lcd.drawRectangle(5, 5, 50, 40);
+	lcd.drawLine(75, 3, 75, 35);
+	lcd.drawLine(60, 10, 60, 40);
+	lcd.drawLine(10, 47, 60, 47);
+	lcd.update();
 	time = micros() - time;
 	delay(3000);
 
 	lcd.clear();
 	len = lcd.print(F("The time it took draw a rect and 3 lines: "));
 	len += lcd.print(time);
-	lcd.renderString(0, 0, len);
+	lcd.update();
 	delay(3000);
 
 	lcd.clear();
@@ -80,13 +110,13 @@ void loop(void)
 			lcd.setPixel(col, row, pixel);
 		}
 	}
-	lcd.renderAll();
+	lcd.update();
 	time = micros() - time;
 	delay(5000);
 
 	lcd.clear();
 	lcd.print(F("The time it took to run setPixel on all 4032 pixels and render it:    "));
 	lcd.print(time);
-	lcd.renderAll();
+	lcd.update();
 	delay(5000);
 }

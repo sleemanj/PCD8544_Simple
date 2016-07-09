@@ -53,11 +53,11 @@
 // You may find a different size screen, but this one is 84 by 48 pixels
 #define PCD8544_X_PIXELS	84
 #define PCD8544_Y_PIXELS	48
-#define PCD8544_ROWS		6
+#define PCD8544_ROWS		( PCD8544_Y_PIXELS / 8 )
 
-#define BUF_LEN				504 // 84 * 6 (6 rows of 8 bits)
+#define BUF_LEN				(( PCD8544_X_PIXELS * PCD8544_Y_PIXELS) / 8)
 
-// Functions gotoXY, writeBitmap, renderString, writeLine and writeRect
+// Functions gotoXY, writeBitmap, renderString, drawLine and drawRectangle
 // will return PCD8544_SUCCESS if they succeed and PCD8544_ERROR if they fail.
 #define PCD8544_SUCCESS		1
 #define PCD8544_ERROR		0
@@ -68,22 +68,37 @@ class PCD8544_Simple : public Print
 public:
 	PCD8544_Simple();	
 
-	// Call a render method after any print/write methods are called.
-	// For best perofrmance aggragate all writes before calling a render method.
-	void renderAll();
+  
+  
+	// Update (render) the display
+	void update();
+  
+  // To print text to the display, use .print() and .println()
+  // which call write()
+  virtual size_t write(uint8_t data);
+  
+  // You can invert future text you print() with this,
+  void invertText(uint8_t inversionStatus = true);  
+  
+  
+  // This I think updates only the part of the display used by a string
+  // which was drawn at 0,0 and of length chars
 	uint8_t renderString(uint8_t x, uint8_t y, uint16_t length);
 	
 	void setPixel(uint8_t x, uint8_t y, uint8_t value);
+		
+	void drawLine(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
 	
-	// WriteLine currently only supports horizontal and vertical lines.
-	uint8_t writeLine(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
-	uint8_t writeRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool fill = false);
-	
+  void drawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
+	void drawFilledRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
+  
+  void drawCircle(uint8_t x0, uint8_t y0, uint8_t radius);
+  void drawFilledCircle(uint8_t x0, uint8_t y0, uint8_t radius);
+  
 	void begin(bool invert = false);
 	void begin(bool invert, uint8_t vop, uint8_t tempCoef, uint8_t bias);
 	void clear(bool render = true);
-	uint8_t gotoXY(uint8_t x, uint8_t y);
-	virtual size_t write(uint8_t uint8_t);
+	uint8_t gotoXY(uint8_t x, uint8_t y);	
 	uint8_t writeBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t width, uint8_t height);
 
 private:
@@ -95,6 +110,8 @@ private:
 	inline void swap(uint8_t &a, uint8_t &b);
 	uint16_t m_Position;
 	uint8_t m_Buffer[BUF_LEN];
+  
+  uint8_t textInversion = false;
 };
 
 //This table contains the hex values that represent pixels
