@@ -1,22 +1,14 @@
 #include <SPI.h>
 #include "PCD8544_Simple.h"
 
-#define USE_FRAME_BUFFER
-
-#ifdef USE_FRAME_BUFFER
-PCD8544_Simple_FB lcd;
-#else
 PCD8544_Simple lcd;
-#endif
 
 void setup(void)
 {
 	Serial.begin(9600);
 	lcd.begin();
 	lcd.print(F("Preparing benchmark"));
-#ifdef USE_FRAME_BUFFER
 	lcd.renderAll();
-#endif
 	delay(1000);
 }
 
@@ -33,46 +25,35 @@ void loop(void)
 	lcd.clear();
 	unsigned long time = micros();
 	len = lcd.print(F("012345678901234567890123456789012345678901234567890123456789012345678901234567890123"));
-#ifdef USE_FRAME_BUFFER
 	lcd.renderString(0, 0, len);
-#endif
 	time = micros() - time;
 	delay(3000);
 
 	lcd.clear();
 	lcd.print(F("The time it took to print 84 chars is:    "));
 	lcd.print(time);
-#ifdef USE_FRAME_BUFFER
 	lcd.renderAll();
-#endif
 	delay(3000);
 
 	lcd.clear();
 	lcd.gotoXY(5,3);
 	lcd.print(F("Test gotoXY"));
-#ifdef USE_FRAME_BUFFER
 	lcd.renderAll();
-#endif
 	delay(3000);
 
 	lcd.clear();
 	time = micros();
 	lcd.writeBitmap(bmp, 10, 2, 25, 3);
-#ifdef USE_FRAME_BUFFER
 	lcd.renderAll();
-#endif
 	time = micros() - time;
 	delay(3000);
 
 	lcd.clear();
 	lcd.print(F("The time it took to draw a 25x3 (25x18) bitmap is: "));
 	lcd.print(time);
-#ifdef USE_FRAME_BUFFER
 	lcd.renderAll();
-#endif
 	delay(3000);
 	
-#ifdef USE_FRAME_BUFFER
 	lcd.clear();
 	time = micros();
 	lcd.writeRect(5, 5, 50, 40);
@@ -108,5 +89,4 @@ void loop(void)
 	lcd.print(time);
 	lcd.renderAll();
 	delay(5000);
-#endif
 }

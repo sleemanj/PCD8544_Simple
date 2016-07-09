@@ -67,29 +67,6 @@ class PCD8544_Simple : public Print
 {
 public:
 	PCD8544_Simple();	
-	
-	void begin(bool invert = false);
-	void begin(bool invert, uint8_t vop, uint8_t tempCoef, uint8_t bias);
-	void clear();
-	uint8_t gotoXY(uint8_t x, uint8_t y);
-	virtual size_t write(uint8_t uint8_t);
-	uint8_t writeBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t width, uint8_t height);
-
-private:
-
-	//void init(void);
-	void writeLcd(uint8_t dataOrCommand, uint8_t data);
-	void writeLcd(uint8_t dataOrCommand, const uint8_t *data, uint16_t count);
-
-	uint8_t m_Column;
-	uint8_t m_Line;
-	void advanceXY(uint8_t columns);
-};
-
-class PCD8544_Simple_FB : public Print
-{
-public:
-	PCD8544_Simple_FB();	
 
 	// Call a render method after any print/write methods are called.
 	// For best perofrmance aggragate all writes before calling a render method.
