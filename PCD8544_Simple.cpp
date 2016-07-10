@@ -108,6 +108,73 @@ uint8_t PCD8544_Simple::gotoXY(uint8_t x, uint8_t y)
   return PCD8544_SUCCESS;
 }
 
+// X and Y are top left corner of the first character, in pixels,
+// you can use this to print text at arbitrary locations, slowly
+void PCD8544_Simple::drawText(const char *text, uint8_t x, uint8_t y)
+{
+  uint8_t bitmap[6] = { 0 };
+  
+  for(uint8_t i = 0; i < strlen(text); i++)
+  {
+    if (text[i] == '\n')
+    {
+      y += 8;
+      x -= 6*(i+1);
+      continue;
+    }
+    
+    if (text[i] < ' ' || text[i] > '~') return;
+    
+    for(uint8_t j = 0; j <5 ;j++)
+    {      
+      if(this->textInversion)
+      {
+        bitmap[j] = ~pgm_read_byte(ASCII[text[i] - 0x20]+j);
+        bitmap[5] = 0xFF;
+      }
+      else
+      {
+        bitmap[j] = pgm_read_byte(ASCII[text[i] - 0x20]+j);
+        bitmap[5] = 0x00;
+      }
+    }
+    
+    drawBitmap(bitmap, x+(6*i), y, 6, 8);
+        
+  }
+}
+
+// The layout of a bitmap is the same as the display itself
+// that is N banks of 8 vertical pixels, by M horizontal pixels
+// A bitmap does not need to be the full height of a multiple of banks
+// unused bits are at the bottom (0,0 is top left)
+void PCD8544_Simple::drawBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t widthPX, uint8_t heightPX)
+{
+  // This could be optimised I think to set an entire pixel bank (8 vertical pixels) where possible
+  // but it's not actually *that* slow, a few ms and this is simple....  
+  for(uint8_t k = 0; k < widthPX; k++)        // Scan from left to right (k = X coordinate of pixel)
+  {
+    for(uint8_t j = 0; j < heightPX; j++)     // Scan from top to bottom (j = Y coordinate)
+    {
+      // The bank (row) we are looking at is 
+      //  j/8 
+      // To seek to this bank we add that many rows
+      // worth of horizontal pixels
+      // Then seek to the pixel (k)
+      // Then we can extract the pixel from that bank & horizontal location
+      //  _BV(j%8)
+      if(*(bitmap+((j/8)*widthPX)+k) & _BV(j%8))  
+      {
+        setPixel(x+k,y+j, 1);
+      }
+      else
+      {
+        setPixel(x+k,y+j, 0);
+      }    
+    }
+  }
+}
+
 uint8_t PCD8544_Simple::writeBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
 {
   //if (x >= PCD8544_X_PIXELS || y >= PCD8544_Y_PIXELS) return;
@@ -136,6 +203,17 @@ void PCD8544_Simple::update()
 { 
  // this->gotoXY(0, 0);
   this->writeLcd(PCD8544_DATA, this->m_Buffer, BUF_LEN);
+}
+
+// Update only a certain horizontal slice of the LCD
+void PCD8544_Simple::update(uint8_t y0, uint8_t y1)
+{
+  y1 = min(y1+8,PCD8544_Y_PIXELS);  
+  this->writeLcd(PCD8544_COMMAND, 0x80 | 0);  // Column (Pixel).
+  this->writeLcd(PCD8544_COMMAND, 0x40 | y0/8);  // Bank (Rows).
+  this->writeLcd(PCD8544_DATA, this->m_Buffer+(PCD8544_X_PIXELS * (y0/8)), ((y1+1)/8  - (y0/8)) * PCD8544_X_PIXELS );
+  this->writeLcd(PCD8544_COMMAND, 0x80 | 0);  // Column (Pixel).
+  this->writeLcd(PCD8544_COMMAND, 0x40 | 0);  // Bank (Rows).  
 }
 
 uint8_t PCD8544_Simple::renderString(uint8_t x, uint8_t y, uint16_t length)
@@ -196,83 +274,6 @@ void PCD8544_Simple::drawFilledRectangle(uint8_t x, uint8_t y, uint8_t width, ui
     width--;
   }
 }
-
-/*
-uint8_t PCD8544_Simple::drawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool fill)
-{
-  
-  
-  if (x >= PCD8544_X_PIXELS || y >= PCD8544_Y_PIXELS || width == 0 || height == 0) return PCD8544_ERROR;
-
-  // Calculate the bitmasks for the pixels.
-  uint8_t bottom = y + height - 1;
-  uint8_t bankTop = y / 8;
-  uint8_t bankBottom = bottom / 8;
-  uint8_t bitMaskTop = 0x01;
-  uint8_t bitMaskBottom = 0x80;
-  uint8_t bitMaskTopFill = 0xFF;
-  uint8_t bitMaskBottomFill = 0xFF;
-  bitMaskTop <<= (y % 8);
-  bitMaskBottom >>= 7 - (bottom % 8);
-  bitMaskTopFill <<= (y % 8);
-  bitMaskBottomFill >>= 7 - (bottom % 8);
-
-  // When fill is selected, we'll use the FillMask.
-  if (fill)
-  {
-    bitMaskTop = bitMaskTopFill;
-    bitMaskBottom = bitMaskBottomFill;
-  }
-
-  // When the rectangle fits in a single bank, we AND the top and bottom masks
-  // So that we only fill the required area on the LCD.
-  if (bankTop == bankBottom)
-  {
-    bitMaskTop = fill ? bitMaskTop & bitMaskBottom : bitMaskTop | bitMaskBottom;
-    bitMaskTopFill &= bitMaskBottomFill;
-  }
-  this->gotoXY(x, bankTop);
-
-  // Write the left 'side' of the rectangle on the top bank.
-  this->m_Buffer[this->m_Position++] |= bitMaskTopFill;
-  // Write a line or a fill.
-  for (uint8_t i = 1; i < width-1; i++)
-    this->m_Buffer[this->m_Position++] |= bitMaskTop;
-  // Write the right 'side' of the rectangle on the top bank.
-  if (width > 1)
-    this->m_Buffer[this->m_Position++] |= bitMaskTopFill;
-
-  this->m_Position += (PCD8544_X_PIXELS - width);
-
-  // Write a fill across the middle banks or two sides of the rectangle.
-  if (bankBottom - bankTop > 1)
-  {
-      for (uint8_t i = bankTop + 1; i < bankBottom; i++)
-      {
-        if (fill)
-          memset(this->m_Buffer + this->m_Position, 0xFF, width);
-        else
-        {
-          this->m_Buffer[this->m_Position] = 0xFF;
-          this->m_Buffer[this->m_Position+width-1] = 0xFF;
-        }
-        this->m_Position += PCD8544_X_PIXELS;
-      }
-  }
-  // If the rectangle spans across more than one bank,
-  // apply the same logic for the bottom as the top.
-  if (bankBottom > bankTop)
-  {
-    this->m_Buffer[this->m_Position++] |= bitMaskBottomFill;
-    for (uint8_t i = 1; i < width-1; i++)
-      this->m_Buffer[this->m_Position++] |= bitMaskBottom;
-    if (width > 1)
-      this->m_Buffer[this->m_Position++] |= bitMaskBottomFill;
-  }
-  return PCD8544_SUCCESS;
-}
-*/
-
 
 // https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm#C
 // This seems to be the same algo that Adafruit uses in their GFX library

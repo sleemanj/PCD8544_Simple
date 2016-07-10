@@ -72,6 +72,7 @@ public:
   
 	// Update (render) the display
 	void update();
+  void update(uint8_t y0, uint8_t y1);
   
   // To print text to the display, use .print() and .println()
   // which call write()
@@ -94,6 +95,9 @@ public:
   
   void drawCircle(uint8_t x0, uint8_t y0, uint8_t radius);
   void drawFilledCircle(uint8_t x0, uint8_t y0, uint8_t radius);
+  
+  void drawText(const char *text, uint8_t x, uint8_t y);
+  void drawBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t widthPX, uint8_t heightPX);
   
 	void begin(bool invert = false);
 	void begin(bool invert, uint8_t vop, uint8_t tempCoef, uint8_t bias);
