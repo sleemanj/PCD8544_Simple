@@ -17,38 +17,10 @@
 #pragma once
 #include "Arduino.h"
 
-// It is very important to wire the LCD correctly. 
-// The following is the default wiring configuration for an Atmega168/328 based Arduino:
-// PIN_DC    D8 
-// PIN_RESET D9 
-// PIN_SCE   D10 
-// PIN_SDIN  D11 
-// PIN_SCLK  D13 
-
-// You may change pins DC, Reset and SCE to map them to different pins on your Arduino board. 
-// Please keep SDIN and SCLK connected to your Arduino's MOSI and SCK (hardware SPI) pins.
-// You can remap the LCD control pins by changing the following '#define' values:
-// Please refer to the pin/port mapping for your Arduino device:
-// http://arduino.cc/en/Hacking/PinMapping168
-// http://arduino.cc/en/Hacking/PinMapping2560
-// Pins labeled Px (PB, PC, etc.) stand for PORTx.
-// The current version of this library only allows the use of one port for the control pins.
-// Pins are mapped in binary order. Valid values are 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80.
-// Px0 is the LSB pin of the port, which in turn is represented by the hexadecimal number 0x01. 
-// Px7 is the MSB pin of the port, which in turn is represented by the hexadecimal number 0x80.
-
-// This is the port where the LCD is connected.
-#define PCD8544_PORT		PORTB
-#define PCD8544_DDR			DDRB	// Should be DDRx, x = port name (B, C, D, etc.)
-						
-#define PIN_DC				0x01	// D8
-#define PIN_RESET			0x02	// D9
-#define PIN_CE				0x04	// D10
-#define PINS_CE_DC			(PIN_DC | PIN_CE)
 
 // When DC is '1' the LCD expects data, when it is '0' it expects a command.
 #define PCD8544_COMMAND		0 
-#define PCD8544_DATA		PIN_DC
+#define PCD8544_DATA      1
 
 // You may find a different size screen, but this one is 84 by 48 pixels
 #define PCD8544_X_PIXELS	84
@@ -68,7 +40,15 @@ class PCD8544_Simple : public Print
 public:
 	PCD8544_Simple();	
 
+  void begin(uint8_t resetPin = 9, uint8_t dataCommandPin = 8, uint8_t chipEnablePin = 255);
   
+  // vOP range    0..127
+  // bias range   0..7
+  // tempCo range 0..3
+  //   The defaults were found experimentally.  In generall you only need to 
+  //   change vOP and leave bias/tempco at defaults.
+  void setContrast(uint8_t vOP = 45, uint8_t bias = 2, uint8_t tempCoef = 0);
+  void invertDisplay(uint8_t inverse = true);
   
 	// Update (render) the display
 	void update();
@@ -77,6 +57,7 @@ public:
   // To print text to the display, use .print() and .println()
   // which call write()
   virtual size_t write(uint8_t data);
+  virtual size_t write(const uint8_t *buffer, size_t size);
   
   // You can invert future text you print() with this,
   void invertText(uint8_t inversionStatus = true);  
@@ -94,10 +75,9 @@ public:
   void drawText(const char *text, uint8_t x, uint8_t y);
   void drawBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t widthPX, uint8_t heightPX, uint8_t fromProgmem = true);
     
-	void begin(bool invert = false);
-	void begin(bool invert, uint8_t vop, uint8_t tempCoef, uint8_t bias);
+	
 	void clear(bool render = true);
-	uint8_t gotoXY(uint8_t x, uint8_t y);	
+	uint8_t setCursor(uint8_t x, uint8_t y);	
 
 private:
 
@@ -110,6 +90,9 @@ private:
 	uint8_t m_Buffer[BUF_LEN];
   
   uint8_t textInversion = false;
+  
+  uint8_t resetPin, dataCommandPin, chipEnablePin;
+  
 };
 
 //This table contains the hex values that represent pixels

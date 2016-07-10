@@ -5,33 +5,59 @@ PCD8544_Simple::PCD8544_Simple()
 {
 }
 
-void PCD8544_Simple::begin(bool invert)
+size_t PCD8544_Simple::write(const uint8_t *buffer, size_t size)
 {
-  this->begin(invert, 0xB0, 0x04, 0x12);
+  size_t x = Print::write(buffer, size);
+  update();
+  return x;
 }
 
-void PCD8544_Simple::begin(bool invert, uint8_t vop, uint8_t tempCoef, uint8_t bias)
+void PCD8544_Simple::begin(uint8_t resetPin, uint8_t dataCommandPin, uint8_t chipEnablePin)
 {
-  PCD8544_PORT |= (PIN_DC | PIN_RESET | PIN_CE);
-  PCD8544_DDR |= (PIN_DC | PIN_RESET | PIN_CE);
+  this->resetPin       = resetPin;
+  this->dataCommandPin = dataCommandPin;
+  this->chipEnablePin  = chipEnablePin;
+ 
+  digitalWrite(this->resetPin, HIGH);
+  pinMode(this->resetPin, OUTPUT);       
+    
+  digitalWrite(this->dataCommandPin, HIGH); 
+  pinMode(this->dataCommandPin, OUTPUT); 
+  
+  // You don't really need CE, you can just tie it low if you only have this 
+  // device on the SPI bus.
+  if(this->chipEnablePin != 255)
+  {
+    digitalWrite(this->chipEnablePin, HIGH); pinMode(this->chipEnablePin, OUTPUT); 
+  }
+  
   SPI.begin();
   
-  // LCD init section:
+  digitalWrite(this->resetPin, LOW);
+  digitalWrite(this->resetPin, HIGH);
   
-  uint8_t invertSetting = invert ? 0x0D : 0x0C;
-  // Must reset LCD first!
-  PCD8544_PORT &= ~PIN_RESET;
-  PCD8544_PORT |= PIN_RESET;
-
-  this->writeLcd(PCD8544_COMMAND, 0x21); //Tell LCD that extended commands follow
-  this->writeLcd(PCD8544_COMMAND, vop); //Set LCD Vop (Contrast): Try 0xB1(good @ 3.3V) or 0xBF if your display is too dark
-  this->writeLcd(PCD8544_COMMAND, tempCoef); //Set Temp coefficent
-  this->writeLcd(PCD8544_COMMAND, bias); //LCD bias mode 1:48: Try 0x13 or 0x14. Mine works best with 1:65/1:65
-
-  this->writeLcd(PCD8544_COMMAND, 0x20); //We must send 0x20 before modifying the display control mode
-  this->writeLcd(PCD8544_COMMAND, invertSetting); //Set display control, normal mode. 0x0D for inverse
-
+  this->setContrast();
+  this->invertDisplay(false);
   this->clear();
+    
+}
+
+void PCD8544_Simple::setContrast(uint8_t vOP, uint8_t bias, uint8_t tempCoef)
+{
+  vOP      &= 0b01111111; // 7 bit for vOP
+  bias     &= 0b00000111; // 3 bit for bias
+  tempCoef &= 0b00000011; // 2 bit for tempCoef
+  
+  this->writeLcd(PCD8544_COMMAND, 0x21); //Tell LCD that extended commands follow
+  this->writeLcd(PCD8544_COMMAND, 0b10000000 | vOP); //Set LCD Vop (Contrast): Try 0xB1(good @ 3.3V) or 0xBF if your display is too dark
+  this->writeLcd(PCD8544_COMMAND, 0b00000100 | tempCoef); //Set Temp coefficent
+  this->writeLcd(PCD8544_COMMAND, 0b00010000 | bias); //LCD bias mode 1:48: Try 0x13 or 0x14. Mine works best with 1:65/1:65
+}
+
+void PCD8544_Simple::invertDisplay(uint8_t invert)
+{  
+  this->writeLcd(PCD8544_COMMAND, 0x20); //We must send 0x20 before modifying the display control mode
+  this->writeLcd(PCD8544_COMMAND, invert ? 0x0D : 0x0C); //Set display control, normal mode. 0x0D for inverse
 }
 
 size_t PCD8544_Simple::write(uint8_t data)
@@ -54,7 +80,7 @@ size_t PCD8544_Simple::write(uint8_t data)
     
     // Clear and seek to th last line.
     memset(this->m_Buffer+((PCD8544_ROWS-1)*PCD8544_X_PIXELS), 0, PCD8544_X_PIXELS);
-    this->gotoXY(0,PCD8544_ROWS-1);
+    this->setCursor(0,PCD8544_ROWS-1);
   }
   
   // Non-ASCII characters are not supported.
@@ -96,15 +122,17 @@ void PCD8544_Simple::clear(bool render)
   memset(this->m_Buffer, 0x00, sizeof(this->m_Buffer));
   if (render)
     this->update();
-  this->gotoXY(0, 0);
+  this->setCursor(0, 0);
 }
 
-uint8_t PCD8544_Simple::gotoXY(uint8_t x, uint8_t y) 
+// For the 5x8 (6x8 including the trailing space)
+// seek to that character location (0,0 is top left)
+uint8_t PCD8544_Simple::setCursor(uint8_t x, uint8_t y) 
 { 
-  if (x >= PCD8544_X_PIXELS || y >= PCD8544_ROWS) return PCD8544_ERROR;
+  if (x >= (PCD8544_X_PIXELS/6) || y >= PCD8544_ROWS) return PCD8544_ERROR;
  // this->writeLcd(PCD8544_COMMAND, 0x80 | x);  // Column (Pixel).
  // this->writeLcd(PCD8544_COMMAND, 0x40 | y);  // Bank (Rows).
-  this->m_Position = (PCD8544_X_PIXELS * y) + x;
+  this->m_Position = (PCD8544_X_PIXELS * y) + (x*6);
   return PCD8544_SUCCESS;
 }
 
@@ -310,19 +338,36 @@ void PCD8544_Simple::drawFilledCircle(uint8_t x0, uint8_t y0, uint8_t radius)
 }
 
 void PCD8544_Simple::writeLcd(uint8_t dataOrCommand, const uint8_t *data, uint16_t count)
-{
-  PCD8544_PORT = (PCD8544_PORT & ~PINS_CE_DC) | dataOrCommand;
-  //for (uint16_t i = 0; i < count; i++)
-  //  SPI.transfer(data[i]);
-    for (uint16_t i = count; i > 0; i--)
+{  
+  if(this->chipEnablePin < 255)
+  {
+    digitalWrite(this->chipEnablePin, LOW);
+  }
+  digitalWrite(this->dataCommandPin, dataOrCommand);
+  
+  
+  for (uint16_t i = count; i > 0; i--)
     SPI.transfer(data[count-i]);
-  PCD8544_PORT |= PIN_CE;
+    
+  if(this->chipEnablePin < 255)
+  {
+    digitalWrite(this->chipEnablePin, HIGH);
+  }  
 }
 
 void PCD8544_Simple::writeLcd(uint8_t dataOrCommand, uint8_t data)
-{
-  PCD8544_PORT = (PCD8544_PORT & ~PINS_CE_DC) | dataOrCommand;
+{     
+  if(this->chipEnablePin < 255)
+  {
+    digitalWrite(this->chipEnablePin, LOW);
+  }  
+  digitalWrite(this->dataCommandPin, dataOrCommand);
+    
   SPI.transfer(data);
-  PCD8544_PORT |= PIN_CE;
+    
+  if(this->chipEnablePin < 255)
+  {
+    digitalWrite(this->chipEnablePin, HIGH);
+  }
 }
 
