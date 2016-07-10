@@ -139,7 +139,7 @@ void PCD8544_Simple::drawText(const char *text, uint8_t x, uint8_t y)
       }
     }
     
-    drawBitmap(bitmap, x+(6*i), y, 6, 8);
+    drawBitmap(bitmap, x+(6*i), y, 6, 8, false);
         
   }
 }
@@ -148,10 +148,11 @@ void PCD8544_Simple::drawText(const char *text, uint8_t x, uint8_t y)
 // that is N banks of 8 vertical pixels, by M horizontal pixels
 // A bitmap does not need to be the full height of a multiple of banks
 // unused bits are at the bottom (0,0 is top left)
-void PCD8544_Simple::drawBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t widthPX, uint8_t heightPX)
+void PCD8544_Simple::drawBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t widthPX, uint8_t heightPX, uint8_t fromProgmem)
 {
   // This could be optimised I think to set an entire pixel bank (8 vertical pixels) where possible
-  // but it's not actually *that* slow, a few ms and this is simple....  
+  // but it's not actually *that* slow, a few ms and this is easier to understand.
+  
   for(uint8_t k = 0; k < widthPX; k++)        // Scan from left to right (k = X coordinate of pixel)
   {
     for(uint8_t j = 0; j < heightPX; j++)     // Scan from top to bottom (j = Y coordinate)
@@ -163,45 +164,37 @@ void PCD8544_Simple::drawBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uin
       // Then seek to the pixel (k)
       // Then we can extract the pixel from that bank & horizontal location
       //  _BV(j%8)
-      if(*(bitmap+((j/8)*widthPX)+k) & _BV(j%8))  
+      if(fromProgmem)
       {
-        setPixel(x+k,y+j, 1);
+        if(pgm_read_byte(bitmap+((j/8)*widthPX)+k) & _BV(j%8))  
+        {
+          setPixel(x+k,y+j, 1);
+        }
+        else
+        {
+          setPixel(x+k,y+j, 0);
+        }
       }
       else
       {
-        setPixel(x+k,y+j, 0);
-      }    
+        if(*(bitmap+((j/8)*widthPX)+k) & _BV(j%8))  
+        {
+          setPixel(x+k,y+j, 1);
+        }
+        else
+        {
+          setPixel(x+k,y+j, 0);
+        }
+      }
     }
   }
 }
 
-uint8_t PCD8544_Simple::writeBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
-{
-  //if (x >= PCD8544_X_PIXELS || y >= PCD8544_Y_PIXELS) return;
-  //this->gotoXY(x, y);
-  //uint16_t pos = this->m_Position;
-  //for (uint8_t y = 0; y < height; y++)
-  //{
-  //  memcpy(this->m_Buffer + pos, bitmap + (y*width), width);
-  //  pos += PCD8544_X_PIXELS;
-  //}
-  
-  if (this->gotoXY(x, y) == PCD8544_ERROR) return PCD8544_ERROR;
-
-  uint8_t *pos = this->m_Buffer + this->m_Position;
-    const uint8_t *maxY = bitmap + height * width;  
-
-  for (const uint8_t *y = (uint8_t*) bitmap; y < maxY; y += width)
-  {
-    memcpy(pos, y, width);
-    pos += PCD8544_X_PIXELS;
-  }
-  return PCD8544_SUCCESS;
-}
-
 void PCD8544_Simple::update()
-{ 
- // this->gotoXY(0, 0);
+{  
+  // Seek to the start
+  this->writeLcd(PCD8544_COMMAND, 0x80 | 0);  // Column (Pixel).
+  this->writeLcd(PCD8544_COMMAND, 0x40 | 0);  // Bank (Rows).
   this->writeLcd(PCD8544_DATA, this->m_Buffer, BUF_LEN);
 }
 
@@ -212,17 +205,6 @@ void PCD8544_Simple::update(uint8_t y0, uint8_t y1)
   this->writeLcd(PCD8544_COMMAND, 0x80 | 0);  // Column (Pixel).
   this->writeLcd(PCD8544_COMMAND, 0x40 | y0/8);  // Bank (Rows).
   this->writeLcd(PCD8544_DATA, this->m_Buffer+(PCD8544_X_PIXELS * (y0/8)), ((y1+1)/8  - (y0/8)) * PCD8544_X_PIXELS );
-  this->writeLcd(PCD8544_COMMAND, 0x80 | 0);  // Column (Pixel).
-  this->writeLcd(PCD8544_COMMAND, 0x40 | 0);  // Bank (Rows).  
-}
-
-uint8_t PCD8544_Simple::renderString(uint8_t x, uint8_t y, uint16_t length)
-{
-  if (this->gotoXY(x, y) == PCD8544_ERROR) return PCD8544_ERROR;
-  length *= 6;
-  this->writeLcd(PCD8544_DATA, this->m_Buffer + this->m_Position, length);
-  this->m_Position += length;
-  return PCD8544_SUCCESS;
 }
 
 void PCD8544_Simple::setPixel(uint8_t x, uint8_t y, uint8_t value)
@@ -326,8 +308,6 @@ void PCD8544_Simple::drawFilledCircle(uint8_t x0, uint8_t y0, uint8_t radius)
   }
   setPixel(x0, y0, 1);
 }
-
-
 
 void PCD8544_Simple::writeLcd(uint8_t dataOrCommand, const uint8_t *data, uint16_t count)
 {

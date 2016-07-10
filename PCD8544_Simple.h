@@ -80,12 +80,7 @@ public:
   
   // You can invert future text you print() with this,
   void invertText(uint8_t inversionStatus = true);  
-  
-  
-  // This I think updates only the part of the display used by a string
-  // which was drawn at 0,0 and of length chars
-	uint8_t renderString(uint8_t x, uint8_t y, uint16_t length);
-	
+  	
 	void setPixel(uint8_t x, uint8_t y, uint8_t value);
 		
 	void drawLine(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
@@ -97,13 +92,12 @@ public:
   void drawFilledCircle(uint8_t x0, uint8_t y0, uint8_t radius);
   
   void drawText(const char *text, uint8_t x, uint8_t y);
-  void drawBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t widthPX, uint8_t heightPX);
-  
+  void drawBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t widthPX, uint8_t heightPX, uint8_t fromProgmem = true);
+    
 	void begin(bool invert = false);
 	void begin(bool invert, uint8_t vop, uint8_t tempCoef, uint8_t bias);
 	void clear(bool render = true);
 	uint8_t gotoXY(uint8_t x, uint8_t y);	
-	uint8_t writeBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t width, uint8_t height);
 
 private:
 
