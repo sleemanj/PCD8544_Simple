@@ -19,9 +19,26 @@ Depicted here is the general wiring required.  As mentioned above if you are usi
 
 ![Example Wiring Diagram](https://rawgit.com/sleemanj/PCD8544_Simple/master/docs/wiring-diagram.png "Example Wiring Diagram")
 
-## Level Shifting Ideas
+## Level Shifting
 
-The most common way to accomplish one-directional level shifting such as required here is using the venerable [CD4050BE Non Inverting Hex Buffer IC](http://sparks.gogo.co.nz/5-of-CD4050BE-DIP-Hex-Non-Inverting-Buffer-IC-348.html)
-
+There are of course many ways to shift voltage levels.  You only need to shift in one direction, from the Arduino to the Display.  Perhaps the most common and robust way to accomplish one-directional level shifting such as required here is using the venerable [CD4050BE Non Inverting Hex Buffer IC](http://sparks.gogo.co.nz/5-of-CD4050BE-DIP-Hex-Non-Inverting-Buffer-IC-348.html)
 
 ![Example Wiring Diagram using CD4050 Level Shifter](https://rawgit.com/sleemanj/PCD8544_Simple/master/docs/wiring-diagram-4050.png "Example Wiring Diagram using CD4050 Level Shifter")
+
+
+
+## Download, Install and Example
+
+* Download: http://sparks.gogo.co.nz/PCD8544_Simple.zip
+* Open the Arduino IDE (this library was tested in 1.6.9, but older versions should be fine too)
+* Select the menu item Sketch > Import Library > Add Library
+* Choose to install the PCD8544_Simple.zip file you downloaded
+* Now you can choose File > Examples > PCD8544_Simple > 01_PrintText
+
+Upload the example to your Arduino and admire the beauty of your display.  Try the other examples for more excitement and to learn how to control the display!  It's easy!
+
+## Full Class Reference
+
+I recommend to just look at the examples which show you how to use all the features, but if you want the nitty-gritty then here is the [full class reference](https://rawgit.com/sleemanj/PCD8544_Simple/70b4c90/docs/html/class_p_c_d8544___simple.html)
+
+Thanks to the super kind folks of [RawGit](https://rawgit.com/) and [MaxCDN](http://www.maxcdn.com/)

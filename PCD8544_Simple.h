@@ -1,22 +1,29 @@
-/********************************************************************
- This is a "Fast PCD8544 Library". It is designed to be used with
- Nokia 5110 type of display, driven by the PCD8544 controller.
- This library uses hardware SPI of your Arduino microcontroller,
- and does not supprt 'software SPI' mode.
- 
- Written by Arthur Liberman (aka 'The Coolest'). http://www.alcpu.com
- Special thanks goes out to 'robtillaart' for his help with debugging
- and optimization.
-
- BSD license, check license.txt for more information.
- All text above must be included in any redistribution.
-********************************************************************/
-
-// Version 1.2 -- Sept. 15, 2013
+/**
+ * Nokia 5110 Type Display Arduino Library
+ * 
+ * This is a "Fast PCD8544 Library". It is designed to be used with
+ * Nokia 5110 type of display, driven by the PCD8544 controller.
+ * This library uses hardware SPI of your Arduino microcontroller,
+ * and does not supprt 'software SPI' mode.
+ *
+ * Originally written by Arthur Liberman (aka 'The Coolest').
+ *    http://www.alcpu.com
+ * Special thanks goes out to 'robtillaart' for his help with debugging
+ * and optimization.
+ *
+ * Reworked by James Sleeman (aka, 'James Sleeman') in 2016
+ *    http://sparks.gogo.co.nz
+ * to simplify and further Arduinoify, document, and enhance with
+ * improved drawing ability (circles, arbitrary lines, non-aligned
+ * bitmaps). 
+ * 
+ * BSD license, check license.txt for more information.
+ * All text above must be included in any redistribution.
+ * 
+*/
 
 #pragma once
 #include "Arduino.h"
-
 
 // When DC is '1' the LCD expects data, when it is '0' it expects a command.
 #define PCD8544_COMMAND		0 
@@ -29,68 +36,236 @@
 
 #define BUF_LEN				(( PCD8544_X_PIXELS * PCD8544_Y_PIXELS) / 8)
 
-// Functions gotoXY, writeBitmap, renderString, drawLine and drawRectangle
-// will return PCD8544_SUCCESS if they succeed and PCD8544_ERROR if they fail.
 #define PCD8544_SUCCESS		1
 #define PCD8544_ERROR		0
-
 
 class PCD8544_Simple : public Print
 {
 public:
 	PCD8544_Simple();	
 
+  /** Initialize
+   * 
+   * @param Arduino digital pin connected to 5110 RST
+   * @param Arduino digital pin connected to 5110 DC 
+   * @param Arduino digital pin connected to 5110 CE
+   *   If CE toggling is not required, connect CE to ground and chipEnablePin as 255 to disable it.
+   */
+  
   void begin(uint8_t resetPin = 9, uint8_t dataCommandPin = 8, uint8_t chipEnablePin = 255);
   
-  // vOP range    0..127
-  // bias range   0..7
-  // tempCo range 0..3
-  //   The defaults were found experimentally.  In generall you only need to 
-  //   change vOP and leave bias/tempco at defaults.
+  /** Set the Contrast
+   * 
+   * In general, just change the vOP value, leave bias and tempCoef as defaults.
+   * (experimentally determined defaults).
+   * 
+   * @param The contrast to use, range of 0..127, values around 45 seem to be best (default).
+   * @param The bias, range of 0..7, 2 seems to work fine
+   * @param The temperature co-efficient, range 0..3, 0 seems to work fine.
+   */
+  
   void setContrast(uint8_t vOP = 45, uint8_t bias = 2, uint8_t tempCoef = 0);
+  
+  /** Set the display to inverted (or not inverted) mode.
+   * 
+   *  @param Pass true to invert the entire display, false to go back to normal mode.
+   */
+  
   void invertDisplay(uint8_t inverse = true);
   
-	// Update (render) the display
+	/** Update (refresh, render) the display.
+   * 
+   *  When using the draw_____() methods, you must call update() to actually cause what
+   *  it was you drew to display (calling .print() type methods does this automatically)
+   * 
+   */
 	void update();
+  
+  /** Update (refresh, render) a part of the display.
+   * 
+   *  As for update() but only re-renders part of the display between the two y pixel
+   *  coordinates.  Due to addressing being in 8 pixel vertical blocks, the portion 
+   *  of the display updated is expanded to at least 8 vertical pixels.
+   * 
+   */
+  
   void update(uint8_t y0, uint8_t y1);
   
-  // To print text to the display, use .print() and .println()
-  // which call write()
+  /** print(), println() support.
+   * 
+   *  write() is a method used by the Print class to print stuff.
+   * 
+   *  For simplicity, when using print(), println(), you do not need to
+   *  update().
+   *    
+   * 
+   */
   virtual size_t write(uint8_t data);
+  
+  /** print(), println() support.
+   * 
+   *  write() is a method used by the Print class to print stuff.
+   * 
+   *  For simplicity, when using print(), println(), you do not need to
+   *  update().
+   * 
+   */
+  
   virtual size_t write(const uint8_t *buffer, size_t size);
   
-  // You can invert future text you print() with this,
+  /** Invert (or stop inverting) future strings passd to print/println/drawText
+   * 
+   *  Example, for highlighting a menu option you might invert the selected option
+   *   (white text on black background)
+   * 
+   *  @param True to invert future strings, False to stop inverting future strings.
+   */
+  
   void invertText(uint8_t inversionStatus = true);  
-  	
+  
+  /** Set a pixel of the display.
+   * 
+   * Top left pixel is 0, 0.  You must call update() after setting the pixel
+   * if you want to see it (or of course, set a bunch of pixels then call update())
+   * 
+   * @param X coordinate - 0 is left
+   * @param Y coordinate - 0 is top
+   * @param 0 clears the pixel, 1 sets the pixel.
+   * 
+   */
+  
 	void setPixel(uint8_t x, uint8_t y, uint8_t value);
 		
+  /** Draw a line on the display.
+   * 
+   * Top left pixel is 0, 0.  You must call update() after drawing
+   * if you want to see it (or of course, draw a bunch of stuff then call update())
+   * 
+   * @param X coordinate of first point - 0 is left
+   * @param Y coordinate of first point - 0 is top
+   * @param X coordinate of second point - 0 is left
+   * @param Y coordinate of second point - 0 is top   
+   * 
+   */
+  
 	void drawLine(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
+  
+  /** Draw a rectangle (outline) on the display.
+   * 
+   * Top left pixel is 0, 0.  You must call update() after drawing
+   * if you want to see it (or of course, draw a bunch of stuff then call update())
+   * 
+   * @param X coordinate of top left corner point - 0 is left
+   * @param Y coordinate of top left corner point - 0 is top
+   * @param Width of rectangle
+   * @param Height of rectangle
+   * 
+   */
 	
   void drawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
+  
+  /** Draw a filled rectangle on the display.
+   * 
+   * Top left pixel is 0, 0.  You must call update() after drawing
+   * if you want to see it (or of course, draw a bunch of stuff then call update())
+   * 
+   * @param X coordinate of top left corner point - 0 is left
+   * @param Y coordinate of top left corner point - 0 is top
+   * @param Width of rectangle
+   * @param Height of rectangle
+   * 
+   */
+  
 	void drawFilledRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
   
+  /** Draw a circle (outline) on the display.
+   * 
+   * Top left pixel is 0, 0.  You must call update() after drawing
+   * if you want to see it (or of course, draw a bunch of stuff then call update())
+   * 
+   * @param X coordinate of center point of circle - 0 is left
+   * @param Y coordinate of center point of circle - 0 is top
+   * @param Radius of circle
+   * 
+   */
+    
   void drawCircle(uint8_t x0, uint8_t y0, uint8_t radius);
+  
+  /** Draw a filled circle on the display.
+   * 
+   * Top left pixel is 0, 0.  You must call update() after drawing
+   * if you want to see it (or of course, draw a bunch of stuff then call update())
+   * 
+   * @param X coordinate of center point of circle - 0 is left
+   * @param Y coordinate of center point of circle - 0 is top
+   * @param Radius of circle
+   * 
+   */
+  
   void drawFilledCircle(uint8_t x0, uint8_t y0, uint8_t radius);
   
+  /** Draw text at a pixel location on the display.
+   * 
+   * Top left pixel is 0, 0.  You must call update() after drawing
+   * if you want to see it (or of course, draw a bunch of stuff then call update())
+   *
+   * print() etc only work on "character locations" (setCursor) while this 
+   * method can put the text at any pixel location.
+   * 
+   * @param The string to draw.
+   * @param X coordinate of top left point of first character
+   * @param Y coordinate of top left point of first character
+   * 
+   */
+  
   void drawText(const char *text, uint8_t x, uint8_t y);
+  
+  /** Draw bitmap at a pixel location on the display.
+   * 
+   * Top left pixel is 0, 0.  You must call update() after drawing
+   * if you want to see it (or of course, draw a bunch of stuff then call update())
+   *
+   * To generate a suitable bitmap, you can use my tool here:
+   *   http://sparks.gogo.co.nz/pcd8554-bmp.html
+   * 
+   * @param The bitmap data to draw
+   * @param X coordinate of top left point of bitmap
+   * @param Y coordinate of top left point of bitmap
+   * @param Width of the bitmap
+   * @param Height of the bitmap
+   * @param True if the bitmap is in PROGMEM, False if it is already in SRAM
+   * 
+   */
   void drawBitmap(const uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t widthPX, uint8_t heightPX, uint8_t fromProgmem = true);
     
-	
+	/** Clear the display.
+   * 
+   * @param True to clear immediately (update), false if you just want to clear the buffer.
+   */
+  
 	void clear(bool render = true);
+  
+  /** Set the "cursor" to a position.
+   * 
+   * The cursor is used for print/println operations, the display is divided into 6 rows (0..5) and 14 columns (0..13)
+   * in accordance with out 6x8 font (5x8 plus an extra blank column per character for spacing).
+   * This sets the cursor position for the next character printed.
+   * 
+   * @param Column 0..13
+   * @param Row 0..5
+   */
+  
 	uint8_t setCursor(uint8_t x, uint8_t y);	
 
 private:
-
-	//void init(void);
+  
 	void writeLcd(uint8_t dataOrCommand, uint8_t data);
 	void writeLcd(uint8_t dataOrCommand, const uint8_t *data, uint16_t count);
-
-	inline void swap(uint8_t &a, uint8_t &b);
+	
 	uint16_t m_Position;
 	uint8_t m_Buffer[BUF_LEN];
   
-  uint8_t textInversion = false;
-  
+  uint8_t textInversion = false;  
   uint8_t resetPin, dataCommandPin, chipEnablePin;
   
 };
