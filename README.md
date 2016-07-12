@@ -9,7 +9,7 @@ The display was used in Nokia mobile phones, and has become highly popular among
 
 ## Voltage
 
-Modules coming out of China commonly are marked as "3-5v".  This is by most accounts incorrect and these devices should be used only at 3.3v
+Modules coming out of China commonly are marked as "3-5v".  There are varying accounts of people's devices failing when being powered from 5v.
 
 **You should consider the display as a 3v3 display only**, do not feed it 5v signalling, and **absolutely do not put 5v on Vcc** if you are using a 5v Arduino, you need to level-shift.
 
@@ -17,14 +17,25 @@ Modules coming out of China commonly are marked as "3-5v".  This is by most acco
 
 Depicted here is the general wiring required.  As mentioned above if you are using a 5v Arduino you MUST level shift, there are many ways to accomplish the level shifting so it's shown here as a "black box" insert your specific type of level shifting arrangement as necessary (or use a 3.3v Arduino).
 
+Notice that there is a 100KΩ Resistor shown "pulling down" the RST pin, this ensures that the display is "held in reset" until such time as the code enables it, this is good practice, although maybe you can get away without it.
+
+Notice that there is a 330Ω Resistor shown on the BL (Backlight) pin, you can adjust this resistor (or use a potentiometer, or connected it to a PWM pin of your arduino or ...) as desired to get whatever backlight brightness you want (or not connect it at all to turn it off).
+
 ![Example Wiring Diagram](https://rawgit.com/sleemanj/PCD8544_Simple/master/docs/wiring-diagram.png "Example Wiring Diagram")
 
 ## Level Shifting
 
-There are of course many ways to shift voltage levels.  You only need to shift in one direction, from the Arduino to the Display.  Perhaps the most common and robust way to accomplish one-directional level shifting such as required here is using the venerable [CD4050BE Non Inverting Hex Buffer IC](http://sparks.gogo.co.nz/5-of-CD4050BE-DIP-Hex-Non-Inverting-Buffer-IC-348.html)
+There are of course many ways to shift voltage levels.  You only need to shift in one direction, from the Arduino to the Display. 
+
+You need at a minimum 4 level shifted channels (as well as a 3v3 power source of course), the CE pin can be connected directly to ground (provided you only have this display on the SPI bus).
+
+A common way to accomplish one-directional level shifting such as required here is using a [CD4050BE Non Inverting Hex Buffer IC](http://sparks.gogo.co.nz/5-of-CD4050BE-DIP-Hex-Non-Inverting-Buffer-IC-348.html).
+
+Note below that a 100nF Capacitor (ceramic) is placed across the CD4050's Power and Ground, that the 4050 is powered from the 3.3V Supply (this is what makes it level shift for you), and again we have a 100K Resistor pulling RST down until it's driven by the Arduino.  
+
+Note also that the unused inputs on the CD4050 are connected to 3v3, in accordance with the datasheet (it is common on logic chips to "tie" unused inputs to either Vcc or Ground, otherwise they may oscillate uncontrollably and cause the chip to be damaged).
 
 ![Example Wiring Diagram using CD4050 Level Shifter](https://rawgit.com/sleemanj/PCD8544_Simple/master/docs/wiring-diagram-4050.png "Example Wiring Diagram using CD4050 Level Shifter")
-
 
 
 ## Download, Install and Example
