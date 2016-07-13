@@ -29,7 +29,15 @@ There are of course many ways to shift voltage levels.  You only need to shift i
 
 You need at a minimum 4 level shifted channels (as well as a 3v3 power source of course), the CE pin can be connected directly to ground (provided you only have this display on the SPI bus).
 
-A common way to accomplish one-directional level shifting such as required here is using a [CD4050BE Non Inverting Hex Buffer IC](http://sparks.gogo.co.nz/5-of-CD4050BE-DIP-Hex-Non-Inverting-Buffer-IC-348.html).
+### Zener Diodes Level Shifter
+
+If you have some 3v3 Zener Diodes lying around, they can be used to accomplish the one-directional level shifting, as shown.
+
+![Example Wiring Diagram using Zener Level Shifter](https://rawgit.com/sleemanj/PCD8544_Simple/master/docs/wiring-diagram-zener.png "Example Wiring Diagram using Zener Diodes")
+
+### "4050" Level Shifter
+
+Another common way to accomplish one-directional level shifting such as required here is using a [CD4050BE Non Inverting Hex Buffer IC](http://sparks.gogo.co.nz/5-of-CD4050BE-DIP-Hex-Non-Inverting-Buffer-IC-348.html).
 
 Note below that a 100nF Capacitor (ceramic) is placed across the CD4050's Power and Ground, that the 4050 is powered from the 3.3V Supply (this is what makes it level shift for you), and again we have a 100K Resistor pulling RST down until it's driven by the Arduino.  
 
