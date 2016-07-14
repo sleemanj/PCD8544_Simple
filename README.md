@@ -17,7 +17,7 @@ Modules coming out of China commonly are marked as "3-5v".  There are varying ac
 
 Depicted here is the general wiring required.  As mentioned above if you are using a 5v Arduino you MUST level shift, there are many ways to accomplish the level shifting so it's shown here as a "black box" insert your specific type of level shifting arrangement as necessary (or use a 3.3v Arduino).
 
-[Some level shifting methods are described here.](LEVEL_SHIFT.md)
+:bulb: [Some actual level shifting methods are described here.](LEVELSHIFT.md) :bulb: 
 
 Notice that there is a 100KΩ Resistor shown "pulling down" the RST pin, this ensures that the display is "held in reset" until such time as the code enables it, this is good practice, although maybe you can get away without it.
 
