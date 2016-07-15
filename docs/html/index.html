@@ -47,6 +47,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
       <li>
@@ -106,17 +107,15 @@ $(document).ready(function(){initNavTree('index.html','');});
 <p>The Nokia 5110 Display is an 84 pixel by 48 pixel monochrome graphic LCD display.</p>
 <p>The display was used in Nokia mobile phones, and has become highly popular amongst hobby electronics because of it's relative abundancy, cheap price, and simplicity to use.</p>
 <h2>Voltage</h2>
-<p>Modules coming out of China commonly are marked as "3-5v". This is by most accounts incorrect and these devices should be used only at 3.3v</p>
+<p>Modules coming out of China commonly are marked as "3-5v". There are varying accounts of people's devices failing when being powered from 5v.</p>
 <p><b>You should consider the display as a 3v3 display only</b>, do not feed it 5v signalling, and <b>absolutely do not put 5v on Vcc</b> if you are using a 5v Arduino, you need to level-shift.</p>
 <h2>Wiring</h2>
 <p>Depicted here is the general wiring required. As mentioned above if you are using a 5v Arduino you MUST level shift, there are many ways to accomplish the level shifting so it's shown here as a "black box" insert your specific type of level shifting arrangement as necessary (or use a 3.3v Arduino).</p>
+<p>:bulb: Some actual level shifting methods are described here. :bulb:</p>
+<p>Notice that there is a 100KΩ Resistor shown "pulling down" the RST pin, this ensures that the display is "held in reset" until such time as the code enables it, this is good practice, although maybe you can get away without it.</p>
+<p>Notice that there is a 330Ω Resistor shown on the BL (Backlight) pin, you can adjust this resistor (or use a potentiometer, or connected it to a PWM pin of your arduino or ...) as desired to get whatever backlight brightness you want (or not connect it at all to turn it off).</p>
 <div class="image">
 <img src="https://rawgit.com/sleemanj/PCD8544_Simple/master/docs/wiring-diagram.png"  alt="Example Wiring Diagram" title="Example Wiring Diagram"/>
-</div>
-<h2>Level Shifting</h2>
-<p>There are of course many ways to shift voltage levels. You only need to shift in one direction, from the Arduino to the Display. Perhaps the most common and robust way to accomplish one-directional level shifting such as required here is using the venerable <a href="http://sparks.gogo.co.nz/5-of-CD4050BE-DIP-Hex-Non-Inverting-Buffer-IC-348.html">CD4050BE Non Inverting Hex Buffer IC</a></p>
-<div class="image">
-<img src="https://rawgit.com/sleemanj/PCD8544_Simple/master/docs/wiring-diagram-4050.png"  alt="Example Wiring Diagram using CD4050 Level Shifter" title="Example Wiring Diagram using CD4050 Level Shifter"/>
 </div>
 <h2>Download, Install and Example</h2>
 <ul>
@@ -127,6 +126,28 @@ $(document).ready(function(){initNavTree('index.html','');});
 <li>Now you can choose File &gt; Examples &gt; <a class="el" href="class_p_c_d8544___simple.html">PCD8544_Simple</a> &gt; 01_PrintText</li>
 </ul>
 <p>Upload the example to your Arduino and admire the beauty of your display. Try the other examples for more excitement and to learn how to control the display! It's easy!</p>
+<h2>Troubleshooting</h2>
+<h3>Blank Display</h3>
+<ol type="1">
+<li>Check your wiring. Check that when the display should be displaying something that RST is close to 3.3v, and that CE is close to 0v (measured relative to Gnd of course).</li>
+<li>Adjust contrast - open the <code>File &gt; Examples &gt; <a class="el" href="class_p_c_d8544___simple.html">PCD8544_Simple</a> &gt; A01_ContrastHelper</code> sketch, upload it, hopefully you will find a contrast level which suits. You can then put <code>lcd.setContrast(xx);</code> right after your <code>lcd.begin()</code> in your actual sketch.</li>
+<li>Try pressing firmly in the center of the top metal section of the LCD. Underneath this is the "zebra strip" which presses against the PCB contacts, sometimes these don't make a good connnection. If pressing helps, press it firmly then bend the tabs over a bit to hold it in place.</li>
+<li>Still no go, and you are sure your wiring is OK, remove the LCD from the PCB (use a thin screwdriver to straighten and push the tabs through the holes), once removed you will see the contact points on the PCB hwhich you can swab with a cotton bud dipped in a solvent like acetone or methylated spirits. Looking at the back of the LCD you will see the "zebra strip", a short (about 1cm) strip of a (in the ones I have done, beige coloured) rubber type material, wipe that surface with your swab as well. Reassemble, and when doing so press it firmly to the PCB when bending the tabs to ensure a good strong contact is made (I use a quick-clamp).</li>
+</ol>
+<h3>Background sometimes darkens</h3>
+<ol type="1">
+<li>Contrast is probably too high, this will cause the off crystals to be "right on the edge" of turning on and it doesn't take a lot to tip them over the edge, creating that "darkening background" issue.</li>
+</ol>
+<h3>Foreground sometimes fades</h3>
+<ol type="1">
+<li>Contrast is probably too low, this will cause the on crystals to be "right on the edge" of turning off and it doesn't take a lot to tip them over the edge, creating that "darkening foreground" issue.</li>
+<li>Zebra strip may need cleaning or display just need snugging up a bit. See points 3 and 4 in the Blank Display section above.</li>
+</ol>
+<h3>Random behaviour (garbled display, random blocks...)</h3>
+<ol type="1">
+<li>Zebra strip may need cleaning or display just need snugging up a bit. See points 3 and 4 in the Blank Display section above.</li>
+<li>Your code might have a bug, are you running out of RAM perhaps, it doesn't take much. Make sure your strings are F() wrapped where appropriate and possible.</li>
+</ol>
 <h2>Full Class Reference</h2>
 <p>I recommend to just look at the examples which show you how to use all the features, but if you want the nitty-gritty then here is the <a href="class_p_c_d8544___simple.html">full class reference</a></p>
 <p>Thanks to the super kind folks of <a href="https://rawgit.com/">RawGit</a> and <a href="http://www.maxcdn.com/">MaxCDN</a> </p>
@@ -135,7 +156,7 @@ $(document).ready(function(){initNavTree('index.html','');});
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Mon Jul 11 2016 01:12:26 for PCD8544_Simple by
+    <li class="footer">Generated on Fri Jul 15 2016 18:23:41 for PCD8544_Simple by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['write',['write',['../class_p_c_d8544___simple.html#a55829c25716f324b8c8e1ba459c843ef',1,'PCD8544_Simple::write(uint8_t data)'],['../class_p_c_d8544___simple.html#a495e1279cc8e5103b3af9fa1779f002a',1,'PCD8544_Simple::write(const uint8_t *buffer, size_t size)']]]
+  ['setcontrast',['setContrast',['../class_p_c_d8544___simple.html#ad8c68f3aa7277eb4615b5cd7e7a6627a',1,'PCD8544_Simple']]],
+  ['setcursor',['setCursor',['../class_p_c_d8544___simple.html#a449440b1a0026aa3fddf7610b6d4f440',1,'PCD8544_Simple']]],
+  ['setpixel',['setPixel',['../class_p_c_d8544___simple.html#ad51048a559edb7c3624cacc23c776632',1,'PCD8544_Simple']]]
 ];
