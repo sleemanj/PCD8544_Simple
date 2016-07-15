@@ -1,3 +1,21 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [PCD8544_Simple](#pcd8544_simple)
+  - [About Nokia 5110 Displays](#about-nokia-5110-displays)
+  - [Voltage](#voltage)
+  - [Wiring](#wiring)
+  - [Download, Install and Example](#download-install-and-example)
+  - [Troubleshooting](#troubleshooting)
+    - [Blank Display](#blank-display)
+    - [Background sometimes darkens](#background-sometimes-darkens)
+    - [Foreground sometimes fades](#foreground-sometimes-fades)
+    - [Random behaviour (garbled display, random blocks...)](#random-behaviour-garbled-display-random-blocks)
+  - [Full Class Reference](#full-class-reference)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # PCD8544_Simple
 Simple Arduino library for Nokia 5110 type displays.
 
