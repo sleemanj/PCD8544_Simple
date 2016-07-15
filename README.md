@@ -62,6 +62,6 @@ Upload the example to your Arduino and admire the beauty of your display.  Try t
   
 ## Full Class Reference
 
-I recommend to just look at the examples which show you how to use all the features, but if you want the nitty-gritty then here is the [full class reference](https://rawgit.com/sleemanj/PCD8544_Simple/70b4c90/docs/html/class_p_c_d8544___simple.html)
+I recommend to just look at the examples which show you how to use all the features, but if you want the nitty-gritty then here is the [full class reference](https://rawgit.com/sleemanj/PCD8544_Simple/d2c5ae1/docs/html/class_p_c_d8544___simple.html)
 
 Thanks to the super kind folks of [RawGit](https://rawgit.com/) and [MaxCDN](http://www.maxcdn.com/)

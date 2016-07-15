@@ -16,8 +16,8 @@
 #include "PCD8544_Simple.h"
 
 PCD8544_Simple lcd;
-const uint8_t contrastMin = 40;
-const uint8_t contrastMax = 80;
+const uint8_t contrastMin = 40; // Absolute min is 0
+const uint8_t contrastMax = 80; // Absolute max is 127
 static uint8_t contrastDirection = 1;
 static uint8_t contrast = (contrastMax-contrastMin)/2+contrastMin;
 
