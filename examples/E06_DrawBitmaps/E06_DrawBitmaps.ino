@@ -62,6 +62,7 @@ PCD8544_Simple lcd;
 void setup()
 {
   lcd.begin();  
+  // lcd.setContrast(70);
 }
 
 void loop()

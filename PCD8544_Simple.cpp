@@ -18,7 +18,7 @@ void PCD8544_Simple::begin(uint8_t resetPin, uint8_t dataCommandPin, uint8_t chi
   this->dataCommandPin = dataCommandPin;
   this->chipEnablePin  = chipEnablePin;
  
-  digitalWrite(this->resetPin, HIGH);
+  digitalWrite(this->resetPin, LOW);
   pinMode(this->resetPin, OUTPUT);       
     
   digitalWrite(this->dataCommandPin, HIGH); 
@@ -33,13 +33,22 @@ void PCD8544_Simple::begin(uint8_t resetPin, uint8_t dataCommandPin, uint8_t chi
   
   SPI.begin();
   
+  this->reset();  
+}
+
+void PCD8544_Simple::reset()
+{
   digitalWrite(this->resetPin, LOW);
+  delay(50);
+  digitalWrite(this->resetPin, HIGH);
+  delay(50);
+  digitalWrite(this->resetPin, LOW);
+  delay(50);
   digitalWrite(this->resetPin, HIGH);
   
+  this->textInversion = false;
   this->setContrast();
-  this->invertDisplay(false);
-  this->clear();
-    
+  this->clear();  
 }
 
 void PCD8544_Simple::setContrast(uint8_t vOP, uint8_t bias, uint8_t tempCoef)
@@ -52,6 +61,7 @@ void PCD8544_Simple::setContrast(uint8_t vOP, uint8_t bias, uint8_t tempCoef)
   this->writeLcd(PCD8544_COMMAND, 0b10000000 | vOP); //Set LCD Vop (Contrast): Try 0xB1(good @ 3.3V) or 0xBF if your display is too dark
   this->writeLcd(PCD8544_COMMAND, 0b00000100 | tempCoef); //Set Temp coefficent
   this->writeLcd(PCD8544_COMMAND, 0b00010000 | bias); //LCD bias mode 1:48: Try 0x13 or 0x14. Mine works best with 1:65/1:65
+  this->invertDisplay(false);
 }
 
 void PCD8544_Simple::invertDisplay(uint8_t invert)

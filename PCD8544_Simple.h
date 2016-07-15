@@ -59,12 +59,20 @@ public:
    * In general, just change the vOP value, leave bias and tempCoef as defaults.
    * (experimentally determined defaults).
    * 
+   * Note that setting the contrast will reset the display to non-inverted mode
+   * (seems to help keep the display working..)
+   * 
    * @param The contrast to use, range of 0..127, values around 45 seem to be best (default).
    * @param The bias, range of 0..7, 2 seems to work fine
    * @param The temperature co-efficient, range 0..3, 0 seems to work fine.
    */
   
-  void setContrast(uint8_t vOP = 45, uint8_t bias = 2, uint8_t tempCoef = 0);
+  // The commented out ones are previous defaults, whatever the last uncommented one is
+  // is what I've found to work reasonably on most devices as a default.
+  
+  //void setContrast(uint8_t vOP = 48, uint8_t bias = 2, uint8_t tempCoef = 0);
+  //void setContrast(uint8_t vOP = 55, uint8_t bias = 2, uint8_t tempCoef = 1);
+  void setContrast(uint8_t vOP = 68, uint8_t bias = 2, uint8_t tempCoef = 1);
   
   /** Set the display to inverted (or not inverted) mode.
    * 
@@ -244,6 +252,12 @@ public:
    */
   
 	void clear(bool render = true);
+  
+  /** Reset the display.
+   * 
+   * NB: Contrast goes back to default setting, as does display inversion.
+   */  
+  void reset();
   
   /** Set the "cursor" to a position.
    * 

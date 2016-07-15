@@ -19,6 +19,7 @@ int counter = 0;
 void setup()
 {
   lcd.begin();  
+  // lcd.setContrast(70);
 }
 
 void loop()
