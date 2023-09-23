@@ -45,7 +45,7 @@ Notice that there is a 330Ω Resistor shown on the BL (Backlight) pin, you can 
 
 ## Download, Install and Example
 
-* Download: http://sparks.gogo.co.nz/PCD8544_Simple.zip
+* Download: https://sparks.gogo.co.nz/PCD8544_Simple.zip
 * Open the Arduino IDE (this library was tested in 1.6.9, but older versions should be fine too)
 * Select the menu item Sketch > Import Library > Add Library
 * Choose to install the PCD8544_Simple.zip file you downloaded
